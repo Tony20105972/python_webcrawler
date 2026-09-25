@@ -1,0 +1,141 @@
+# ============================================
+# Python
+# ============================================
+
+__pycache__/
+*.py[cod]
+*$py.class
+
+.venv/
+venv/
+env/
+ENV/
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+*.egg-info/
+dist/
+build/
+
+
+# ============================================
+# Environment / Secrets
+# ============================================
+
+.env
+.env.*
+!.env.example
+
+*.pem
+*.key
+credentials.*
+secrets.*
+
+
+# ============================================
+# Next.js / Node
+# ============================================
+
+node_modules/
+
+.next/
+out/
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+.vercel/
+
+
+# ============================================
+# Generated crawler data
+# ============================================
+
+workspace/
+cache/
+.cache/
+
+raw/
+downloads/
+
+*.tmp
+*.temp
+
+
+# ============================================
+# HWPX Renderer / Generated documents
+# ============================================
+
+tmp/
+output/
+generated/
+qa/generated/
+qa/comparison/
+
+*.hwpx
+*.hwp
+
+# 단, HWPX 기본 템플릿은 Git에 포함
+!templates/*.hwpx
+
+
+# ============================================
+# Downloaded article images / assets
+# ============================================
+
+workspace/**/assets/
+tmp/**/images/
+
+
+# ============================================
+# OS
+# ============================================
+
+.DS_Store
+.AppleDouble
+.LSOverride
+
+Thumbs.db
+desktop.ini
+
+
+# ============================================
+# IDE / Editors
+# ============================================
+
+.vscode/
+.idea/
+
+*.swp
+*.swo
+*~
+
+
+# ============================================
+# Logs
+# ============================================
+
+*.log
+logs/
+
+
+# ============================================
+# Test / Coverage
+# ============================================
+
+coverage/
+.nyc_output/
+
+
+# ============================================
+# Misc
+# ============================================
+
+*.bak
+*.backup
