@@ -19,11 +19,11 @@ def absolute_url(base_url: str, value: str | None) -> str | None:
 
 
 def _src_from_tag(tag: Tag) -> str | None:
-    srcset = tag.get("srcset") or tag.get("data-srcset")
+    srcset = tag.get("srcset") or tag.get("data-srcset") or tag.get("data-lazy-srcset")
     if srcset:
         # Usually the last candidate is the largest responsive rendition.
         return srcset.split(",")[-1].strip().split()[0]
-    return tag.get("src") or tag.get("data-src") or tag.get("data-original")
+    return tag.get("src") or tag.get("data-src") or tag.get("data-original") or tag.get("data-lazy-src")
 
 
 def _excluded(tag: Tag, url: str) -> bool:
@@ -41,17 +41,26 @@ def _excluded(tag: Tag, url: str) -> bool:
     return url.lower().split("?")[0].endswith(".svg")
 
 
-def extract_images(soup: BeautifulSoup, base_url: str, lead_image: str | None = None) -> list[str]:
-    """Return distinct likely editorial images, with the lead image first."""
-    candidates: list[str] = []
+def _image_details(tag: Tag, url: str) -> dict[str, str]:
+    figure = tag.find_parent("figure")
+    caption_tag = figure.find("figcaption") if figure else None
+    caption = caption_tag.get_text(" ", strip=True) if caption_tag else ""
+    credit_tag = (figure.select_one("[class*='credit'], [class*='source']") if figure else None)
+    credit = credit_tag.get_text(" ", strip=True) if credit_tag else ""
+    return {"url": url, "caption": caption, "alt": tag.get("alt", "").strip(), "credit": credit}
+
+
+def extract_images(soup: BeautifulSoup, base_url: str, lead_image: str | None = None) -> list[dict[str, str]]:
+    """Return distinct editorial image records. Figure captions take precedence."""
+    candidates: list[dict[str, str]] = []
     if lead := absolute_url(base_url, lead_image):
-        candidates.append(lead)
+        candidates.append({"url": lead, "caption": "", "alt": "", "credit": ""})
     roots = soup.select("article, main") or [soup]
     for root in roots:
         for tag in root.find_all(["img", "source"]):
             raw = _src_from_tag(tag)
             url = absolute_url(base_url, raw)
             if url and not _excluded(tag, url):
-                candidates.append(url)
+                candidates.append(_image_details(tag, url))
     seen: set[str] = set()
-    return [url for url in candidates if not (url in seen or seen.add(url))]
+    return [item for item in candidates if not (item["url"] in seen or seen.add(item["url"]))]

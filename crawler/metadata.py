@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 from bs4 import BeautifulSoup
 
 ARTICLE_TYPES = {"article", "newsarticle", "reportage", "analysisnewsarticle"}
+AUTHOR_RE = re.compile(r"(?:(?P<before>[가-힣]{2,5})\s*(?:기자|특파원)|(?:기자)\s*(?P<after>[가-힣]{2,5}))")
 
 
 def text_value(value: Any) -> str | None:
@@ -87,4 +89,43 @@ def html_metadata(soup: BeautifulSoup) -> dict[str, str]:
         "published_at": _meta(soup, "article:published_time", "datepublished", "date") or "",
         "lead_image": _meta(soup, "og:image", "og:image:url", "twitter:image", "image") or "",
         "description": _meta(soup, "description", "og:description") or "",
+    }
+
+
+def normalize_author(value: str) -> str:
+    """Keep a useful byline while preventing email addresses from becoming authors."""
+    value = re.sub(r"\s+", " ", value).strip()
+    if not value:
+        return ""
+    # A byline often appends a contact address. Remove it, rather than rejecting
+    # the adjacent reporter name; an address by itself still yields an empty value.
+    value = re.sub(r"\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b", "", value).strip(" ,;|")
+    if not value:
+        return ""
+    korean = AUTHOR_RE.search(value)
+    if korean:
+        name = korean.group("before") or korean.group("after")
+        role = "특파원" if "특파원" in korean.group(0) else "기자"
+        return f"{name} {role}"
+    # Names are normally short; discard obvious prose accidentally captured from a container.
+    return value if len(value) <= 100 else ""
+
+
+def semantic_metadata(soup: BeautifulSoup) -> dict[str, str]:
+    """Extract semantic bylines/dates without any publisher-specific selector."""
+    author = ""
+    for tag in soup.select("[rel='author'], [itemprop='author'], .author, .byline, .writer, .reporter"):
+        author = normalize_author(tag.get("content") or tag.get_text(" ", strip=True))
+        if author:
+            break
+    published = ""
+    for tag in soup.select("time[datetime], [itemprop='datePublished'], [itemprop='dateCreated']"):
+        published = (tag.get("datetime") or tag.get("content") or tag.get_text(" ", strip=True)).strip()
+        if published:
+            break
+    h1 = soup.find("h1")
+    return {
+        "title": h1.get_text(" ", strip=True) if h1 else "",
+        "author": author,
+        "published_at": published,
     }

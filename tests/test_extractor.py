@@ -20,7 +20,8 @@ class ExtractArticleTests(unittest.TestCase):
         self.assertEqual(result["published_at"], "2026-01-02T03:04:05Z")
         self.assertEqual(result["article_text"], "JSON-LD article body.")
         self.assertEqual(result["lead_image"], "https://news.example/assets/hero.jpg")
-        self.assertEqual(result["images"], ["https://news.example/assets/hero.jpg", "https://news.example/images/body.jpg"])
+        self.assertEqual([image["url"] for image in result["images"]], ["https://news.example/assets/hero.jpg", "https://news.example/images/body.jpg"])
+        self.assertTrue(result["quality"]["title"])
 
     def test_html_metadata_and_article_fallback(self):
         html = "<html><head><meta property='og:title' content='OG title'></head><body><main><h1>Ignored h1</h1><p>Useful fallback copy.</p></main></body></html>"

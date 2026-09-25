@@ -27,7 +27,8 @@ python main.py "https://www.theguardian.com/world/live/2025/oct/01/mette-frederi
   "published_at": "...",
   "article_text": "...",
   "lead_image": "...",
-  "images": ["..."]
+  "images": [{"url": "...", "caption": "...", "alt": "...", "credit": "..."}],
+  "quality": {"title": true, "author": true, "date": true, "body_length": 3521, "image_count": 4, "score": 0.91, "warnings": []}
 }
 ```
 
@@ -41,7 +42,7 @@ python main.py "https://www.theguardian.com/world/live/2025/oct/01/mette-frederi
 ## 테스트
 
 ```bash
-python -m unittest discover -s tests -v
+pytest -q
 ```
 
 ## 한계
