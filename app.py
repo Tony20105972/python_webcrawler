@@ -1,6 +1,7 @@
 """A small local Streamlit application for extracting one public news article."""
 from __future__ import annotations
 
+from pathlib import Path
 from urllib.parse import urlparse
 
 import streamlit as st
@@ -8,6 +9,12 @@ import streamlit as st
 from crawler.exporters import article_json, article_markdown
 from crawler.extractor import extract_article
 from crawler.fetcher import FetchError, UnsafeUrlError, fetch_html
+from weekly.input_parser import parse_sections
+from weekly.pipeline import build_publication
+from weekly.renderer import render_pdf
+from weekly.validate import validate_publication
+from renderer.hwpx.document import render as render_hwpx
+from renderer.hwpx.validator import validate as validate_hwpx
 
 st.set_page_config(page_title="뉴스 기사 크롤러", page_icon="📰", layout="centered")
 
@@ -79,3 +86,32 @@ if st.button("크롤링", type="primary", use_container_width=True):
 
 if article := st.session_state.get("article"):
     show_article(article)
+
+st.divider()
+st.subheader("주간시사 편집 엔진")
+st.caption("섹션별 URL을 수집해 `publication.json`을 만들고, 레퍼런스 레이아웃 기반 PDF로 편집합니다.")
+weekly_input = st.text_area("주간시사 구성", placeholder="주간시사 1\n주제: 정치\nhttps://news.example.com/a\n\n주간시사 2\n주제: 경제\nhttps://news.example.com/b", height=220)
+workspace_name = st.text_input("워크스페이스 폴더명", value="issue-2026-09-week3")
+if st.button("주간시사 PDF 생성", use_container_width=True):
+    try:
+        specs = parse_sections(weekly_input)
+        workspace = Path("workspace") / Path(workspace_name).name
+        with st.spinner("기사와 이미지를 수집하고 PDF를 편집하고 있습니다..."):
+            publication = build_publication(specs, workspace, {"issue_label": "주간시사", "year": "2026", "show_source_url": True})
+            report = validate_publication(publication, workspace)
+            pdf_path = render_pdf(publication, workspace / "weekly-current-affairs.pdf", workspace)
+            hwpx_path = render_hwpx(workspace / "publication.json", workspace / "weekly-current-affairs.hwpx")
+            if hwpx_errors := validate_hwpx(str(hwpx_path), str(workspace / "publication.json")):
+                raise RuntimeError("HWPX package validation failed: " + "; ".join(hwpx_errors))
+        st.session_state.weekly_pdf = pdf_path.read_bytes()
+        st.session_state.weekly_hwpx = hwpx_path.read_bytes()
+        st.session_state.weekly_report = report
+        st.success(f"생성 완료: {workspace}")
+    except (ValueError, FetchError, UnsafeUrlError) as exc:
+        st.error(f"주간시사 생성 실패: {exc}")
+    except Exception:
+        st.error("문서 생성 중 오류가 발생했습니다. URL과 네트워크 상태를 확인해 주세요.")
+if pdf := st.session_state.get("weekly_pdf"):
+    st.download_button("주간시사 PDF 다운로드", pdf, "weekly-current-affairs.pdf", "application/pdf", use_container_width=True)
+    st.download_button("주간시사 HWPX 다운로드", st.session_state.get("weekly_hwpx"), "weekly-current-affairs.hwpx", "application/hwp+zip", use_container_width=True)
+    st.json(st.session_state.get("weekly_report", {}))

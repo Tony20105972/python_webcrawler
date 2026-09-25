@@ -1,0 +1,14 @@
+{
+  "reference": {"source": "2026주간시사 9월3주_표지포함.pdf", "page_count": 24, "analysis": "A4 portrait; grey cover; first editorial page; repeating grey header and blue footer URL; article pages use full-width Korean body text with occasional right-aligned image."},
+  "page": {"size": "A4", "margin_top_mm": 25, "margin_bottom_mm": 22, "margin_left_mm": 20, "margin_right_mm": 20},
+  "colors": {"ink": "#222222", "grey": "#B6B7B9", "section_grey": "#8D8F90", "accent_blue": "#244BD8", "rule": "#4A4A4A"},
+  "cover": {"brand": "KAIROS ACADEMY", "brand_korean": "카이로스(시대인재) 김윤환논술", "title": "시사 읽기자료집", "subtitle": "세상의 많은 이야기들", "year_suffix": "학년도", "background": "#B6B7B9"},
+  "header": {"height_mm": 12, "left_text": "김윤환입시연구소  시사 읽기자료집", "right_text": "www.pogara.com", "font_size_pt": 7, "rule_width_pt": 0.5},
+  "footer": {"url": "www.pogara.com", "font_size_pt": 6.5, "page_number_size_pt": 7, "rule_width_pt": 0.5},
+  "intro": {"class_label": "김윤환CLASS", "title": "시사 읽기자료집", "font_size_pt": 20, "week_font_size_pt": 8, "hero_height_mm": 35},
+  "section": {"label_prefix": "주간시사", "font_size_pt": 10, "title_size_pt": 10, "bar_height_mm": 8, "margin_top_mm": 7, "margin_bottom_mm": 5},
+  "article_title": {"font_size_pt": 13, "leading_pt": 18, "margin_top_mm": 5, "margin_bottom_mm": 2},
+  "metadata": {"font_size_pt": 8, "leading_pt": 11, "margin_bottom_mm": 4},
+  "body": {"font_size_pt": 9, "leading_pt": 15, "paragraph_spacing_pt": 7, "alignment": "justify"},
+  "image": {"max_width_mm": 120, "max_height_mm": 100, "caption_size_pt": 6.5, "spacing_mm": 4, "min_aspect_ratio": 0.35, "max_aspect_ratio": 3.5}
+}

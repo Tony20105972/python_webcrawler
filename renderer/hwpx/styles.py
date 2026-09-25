@@ -1,0 +1,5 @@
+"""HWPX style IDs supplied by the shipped, Hancom-compatible base template."""
+BODY_CHAR, BODY_PARA = "0", "0"
+TITLE_CHAR, TITLE_PARA = "5", "0"
+META_CHAR, META_PARA = "2", "0"
+SECTION_CHAR, SECTION_PARA = "6", "0"

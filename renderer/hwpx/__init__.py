@@ -1,0 +1,1 @@
+"""Standards-oriented HWPX renderer."""
