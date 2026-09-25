@@ -1,0 +1,25 @@
+sources:
+  - name: 경향신문 정치
+    category: 정치
+    rss_url: https://www.khan.co.kr/rss/rssdata/politic_news.xml
+    enabled: true
+  - name: 경향신문 경제
+    category: 경제
+    rss_url: https://www.khan.co.kr/rss/rssdata/economy_news.xml
+    enabled: true
+  - name: 경향신문 사회
+    category: 사회
+    rss_url: https://www.khan.co.kr/rss/rssdata/society_news.xml
+    enabled: true
+  - name: The Guardian Politics
+    category: 정치
+    rss_url: https://www.theguardian.com/politics/rss
+    enabled: true
+  - name: The Guardian Business
+    category: 경제
+    rss_url: https://www.theguardian.com/business/rss
+    enabled: true
+  - name: The Guardian Society
+    category: 사회
+    rss_url: https://www.theguardian.com/society/rss
+    enabled: true

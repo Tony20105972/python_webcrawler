@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from urllib.parse import urlparse
+from datetime import date, timedelta
 
 import streamlit as st
 
@@ -15,6 +16,10 @@ from weekly.renderer import render_pdf
 from weekly.validate import validate_publication
 from renderer.hwpx.document import render as render_hwpx
 from renderer.hwpx.validator import validate as validate_hwpx
+from discovery.providers.search import GoogleNewsRssProvider
+from discovery.providers.direct_rss import DirectPublisherRssProvider
+from discovery.providers.composite import CompositeNewsSearchProvider
+from discovery.service import discover
 
 st.set_page_config(page_title="뉴스 기사 크롤러", page_icon="📰", layout="centered")
 
@@ -115,3 +120,57 @@ if pdf := st.session_state.get("weekly_pdf"):
     st.download_button("주간시사 PDF 다운로드", pdf, "weekly-current-affairs.pdf", "application/pdf", use_container_width=True)
     st.download_button("주간시사 HWPX 다운로드", st.session_state.get("weekly_hwpx"), "weekly-current-affairs.hwpx", "application/hwp+zip", use_container_width=True)
     st.json(st.session_state.get("weekly_report", {}))
+
+st.divider()
+st.subheader("이번 주 기사 찾기")
+start_date, end_date = st.date_input("검색 날짜 범위", value=(date.today() - timedelta(days=6), date.today()), max_value=date.today())
+if st.button("후보 기사 찾기", use_container_width=True):
+    try:
+        with st.status("공개 뉴스 검색과 미리보기 분석 중...", expanded=True) as status:
+            st.write("정치·경제·사회 검색 결과를 수집합니다.")
+            issues, failures, diagnostics = discover(CompositeNewsSearchProvider([DirectPublisherRssProvider(), GoogleNewsRssProvider()]), start_date, end_date)
+            st.write("본문 길이·본문 이미지·추출 품질을 사전 평가했습니다.")
+            st.session_state.discovery_result = issues
+            st.session_state.discovery_failures = failures
+            st.session_state.discovery_diagnostics = diagnostics
+            st.session_state.selected_articles = []
+            status.update(label=f"이슈 {len(issues)}개 발견", state="complete")
+    except Exception as exc:
+        st.error(f"후보 검색 실패: {exc}")
+
+if issues := st.session_state.get("discovery_result"):
+    selected=[]
+    for issue in issues:
+        st.markdown(f"#### {issue['category']} | {issue['title']}")
+        st.caption(f"보도 {issue['coverage_count']}건 · 출처 {issue['publisher_count']}곳 · 이슈 중요도 {issue['importance']:.1f}")
+        for index, candidate in enumerate(issue["candidates"]):
+            key=f"select_{issue['key']}_{index}"
+            checked=st.checkbox(f"{candidate['title']} — 적합도 {candidate['suitability']}", key=key)
+            st.caption(f"{candidate['publisher']} | {candidate['published_at']} | 본문 {candidate['preview'].get('clean_text_length', 0):,}자 | 이미지 {candidate['preview'].get('body_image_count', 0)}")
+            st.link_button("원문 열기", candidate["url"])
+            if checked: selected.append(candidate)
+        with st.expander("다른 후보"):
+            alternatives = issue.get("alternatives", [])
+            if alternatives:
+                for candidate in alternatives:
+                    st.write(f"{candidate['title']} ({candidate['publisher']})")
+            else:
+                st.write("다른 preview 통과 후보가 없습니다.")
+    st.session_state.selected_articles = selected
+    if st.button("선택한 기사 본크롤링", type="primary", use_container_width=True):
+        normalized=[]; failures=[]
+        with st.status("선택한 기사만 본크롤링 중...", expanded=True) as status:
+            for candidate in selected:
+                try:
+                    page=fetch_html(candidate["url"]); article=extract_article(page.url,page.text); article["source_url"]=page.source_url; normalized.append(article)
+                except Exception as exc: failures.append(f"{candidate['url']}: {exc}")
+            status.update(label=f"본크롤링 완료: {len(normalized)}건", state="complete")
+        st.session_state.normalized_articles=normalized
+        st.session_state.discovery_failures=st.session_state.get("discovery_failures", [])+failures
+        st.success(f"{len(normalized)}개 기사를 Publication Builder에 전달할 준비가 되었습니다.")
+    if failures := st.session_state.get("discovery_failures"):
+        with st.expander(f"실패 로그 ({len(failures)})"):
+            st.code("\n".join(failures))
+if diagnostics := st.session_state.get("discovery_diagnostics"):
+    with st.expander("검색 진단"):
+        st.json(diagnostics)

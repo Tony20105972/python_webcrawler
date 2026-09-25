@@ -1,0 +1,15 @@
+search:
+  ttl_seconds: 1800
+  per_query_limit: 4
+selection:
+  max_recommendations: 9
+  per_issue: 2
+  weights:
+    text_length: 0.40
+    body_images: 0.30
+    issue_relevance: 0.20
+    crawl_quality: 0.10
+thresholds:
+  min_text_length: 300
+  target_text_length: 3000
+  target_image_count: 3

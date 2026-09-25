@@ -31,7 +31,8 @@ def test_korean_byline_noise_and_figure_metadata():
     result = extract_article("https://news.example/item", html)
     assert result["author"] == "홍길동 기자"
     assert "관련기사" not in result["article_text"]
-    assert result["images"][0] == {"url": "https://news.example/photos/a.jpg", "caption": "현장 모습 연합뉴스", "alt": "현장 사진", "credit": "연합뉴스"}
+    assert result["images"][0]["url"] == "https://news.example/photos/a.jpg"
+    assert result["images"][0]["caption"] == "현장 모습 연합뉴스"
     assert result["images"][1]["url"] == "https://news.example/photos/l.jpg"
     assert result["quality"]["date"] is True
 

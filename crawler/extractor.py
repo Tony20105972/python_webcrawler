@@ -41,6 +41,19 @@ def _semantic_text(soup: BeautifulSoup) -> str:
     return max(texts, key=len, default="")
 
 
+def detect_body_container(soup: BeautifulSoup):
+    """Select one body node once; text and image extraction share this decision."""
+    selectors = "[itemprop='articleBody'], #articleBody, #article-view-content-div, .article-body, .article_view, .article-view, .newsct_article, article, main, [role='main']"
+    candidates = soup.select(selectors)
+    if not candidates:
+        return soup.body or soup
+    def score(node) -> int:
+        marker = " ".join([str(node.get("id", "")), " ".join(node.get("class", []))]).lower()
+        text = sum(len(p.get_text(" ", strip=True)) for p in node.find_all("p"))
+        return text + (1000 if "articlebody" in marker.replace("-", "").replace("_", "") else 0) - (10000 if NOISE_RE.search(marker) else 0)
+    return max(candidates, key=score)
+
+
 def _fallback_text(soup: BeautifulSoup) -> str:
     candidates = soup.select("article, main, [role='main']") or [soup.body or soup]
     best = max(candidates, key=lambda tag: len(tag.get_text(" ", strip=True)))
@@ -69,12 +82,13 @@ def _quality(article: dict[str, object]) -> dict[str, object]:
     return {"title": title, "author": author, "date": date, "body_length": length, "image_count": image_count, "score": round(score, 2), "warnings": warnings}
 
 
-def extract_article(url: str, html: str) -> dict[str, object]:
+def extract_article(url: str, html: str, image_debug: bool = False) -> dict[str, object]:
     """Extract normalized article fields from already-fetched page HTML."""
     soup = BeautifulSoup(html, "html.parser")
     ld = json_ld_article(soup)
     meta = html_metadata(soup)
     semantic = semantic_metadata(soup)
+    body_container = detect_body_container(soup)
     semantic_body = _semantic_text(soup)
     extracted = trafilatura.extract(html, include_comments=False, include_tables=False) or ""
 
@@ -82,7 +96,11 @@ def extract_article(url: str, html: str) -> dict[str, object]:
         return str(ld.get(field) or meta.get(field) or semantic.get(field) or default).strip()
 
     lead = absolute_url(url, choose("lead_image"))
-    images = extract_images(soup, url, lead)
+    result = extract_images(soup, url, lead, body_container=body_container, debug=image_debug)
+    images, image_decisions = result if image_debug else (result, [])
+    # Prefer a real body image as lead; metadata image remains a safe fallback.
+    if images:
+        lead = str(images[0]["url"])
     # Fallback removes boilerplate nodes, so collect images before it mutates the tree.
     fallback = _fallback_text(soup)
     # JSON-LD is authoritative; otherwise prefer a substantial semantic region, then trafilatura.
@@ -98,4 +116,6 @@ def extract_article(url: str, html: str) -> dict[str, object]:
         "images": images,
     }
     article["quality"] = _quality(article)
+    if image_debug:
+        article["image_debug"] = image_decisions
     return article

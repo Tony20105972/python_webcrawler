@@ -134,6 +134,18 @@ python build_issue.py --input workspace/issue-2026-09-week3/publication.json \
 pytest -q
 ```
 
+## 이미지 추출 규칙
+
+이미지는 페이지 전체가 아니라 본문 탐지기가 선택한 `articleBody`/`article`/`main` 컨테이너 안에서만 탐색합니다. `figure`, 본문 문단 인접성, `figcaption`/credit, 대표 이미지 일치를 양수 신호로 사용하고, 관련·추천·인기 기사, 광고, 카드 반복, 프로필, 로고·아이콘, `aside`/`nav`/`footer`를 음수 신호로 합산합니다. 기본 임계값을 통과한 본문 이미지만 `images`에 들어갑니다.
+
+`images` 항목은 기존 `url`, `caption`, `alt`, `credit`에 더해 `type: "body"`, `confidence`를 포함합니다. `lead_image`는 기존 문자열 API 호환성을 유지하고, 첫 고신뢰 본문 이미지가 있으면 이를 우선 사용합니다. 개발 시 `extract_article(url, html, image_debug=True)`를 호출하면 제외 이유와 점수가 `image_debug`에 추가됩니다.
+
+## 이번 주 기사 찾기
+
+Streamlit의 **이번 주 기사 찾기**에서 날짜 범위를 선택하고 검색하면, 공개 RSS 검색 결과의 메타데이터만 먼저 수집합니다. 정치·경제·사회로 분류한 뒤 제목/키워드 기반 이슈를 묶고, 이슈 중요도는 `coverage_count`와 `publisher_count`만으로 계산합니다. 검색량을 추정하거나 임의로 생성하지 않습니다.
+
+본문 preview는 기존 crawler의 본문 길이·본문 이미지 수·추출 품질을 이용하며, 적합도는 `config/news_selection.yaml`의 본문 길이 40%, 이미지 30%, 이슈 관련성 20%, crawl quality 10% 가중치로 계산합니다. 추천은 이슈당 2개, 전체 최대 9개이며 자동으로 채택하지 않습니다. 사용자가 체크한 URL만 본크롤링합니다. Google News RSS가 제공하는 중계 URL이 robots 정책에 의해 차단될 수 있으며, 이 경우 실패 로그를 남기고 기사 채택을 하지 않습니다.
+
 ## 알려진 한계
 
 - JavaScript 실행 뒤에만 표시되는 기사 내용은 추출하지 못할 수 있습니다.
